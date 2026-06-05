@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matrixmind</title>
+  <link rel="stylesheet" href="styles.css?v=20260605b">
+  <script src="src/game.js?v=20260605b" defer></script>
+</head>
+
+<body>
+  <main class="app" aria-labelledby="title">
+    <section class="game-shell">
+      <header class="top-bar">
+        <h1 id="title" class="wordmark" aria-label="Matrixmind">
+          <span class="wordmark-line wordmark-matrix">MATRIX</span>
+          <span class="wordmark-lower">
+            <span class="wordmark-stones" aria-hidden="true">
+              <span class="wordmark-stone stone-orange"></span>
+              <span class="wordmark-stone stone-sky"></span>
+              <span class="wordmark-stone stone-green"></span>
+              <span class="wordmark-stone stone-purple"></span>
+            </span>
+            <span class="wordmark-line wordmark-mind">MIND</span>
+          </span>
+        </h1>
+        <div class="top-actions" aria-label="Game controls">
+          <button class="control-icon-button instructions-control" type="button" aria-label="Instructions" title="Instructions">
+            <span class="rules-sheet-icon" aria-hidden="true"></span>
+          </button>
+          <button id="new-button" class="control-icon-button new-game-control" type="button" aria-label="New game" title="New game">
+            <svg class="new-game-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <rect x="13" y="12" width="34" height="42" rx="5"></rect>
+              <path d="M22 24h16M22 32h16M22 40h10"></path>
+              <circle cx="48" cy="46" r="11"></circle>
+              <path d="M48 39v14M41 46h14"></path>
+            </svg>
+          </button>
+          <button class="control-icon-button settings-control" type="button" aria-label="Settings" title="Settings">
+            <span class="radio-icon" aria-hidden="true">
+              <span class="radio-dial"></span>
+              <span class="radio-knob radio-knob-left"></span>
+              <span class="radio-knob radio-knob-right"></span>
+              <span class="radio-slots"></span>
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <section class="play-panel" aria-label="Current guess">
+        <div id="board" class="board"></div>
+        <div class="palette-row">
+          <div id="palette" class="palette" aria-label="Colour palette"></div>
+          <button id="submit-button" class="enter-button" type="button" aria-label="Submit guess">
+            <svg class="enter-icon" viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M6 36c4.5-15.5 17-24 32-24V5l8 10-8 10v-7C24 18 13.5 24.4 6 36Z" />
+            </svg>
+          </button>
+        </div>
+        <div class="action-row">
+          <p id="status" class="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="history-panel" aria-label="Previous guesses">
+        <ol id="history" class="history"></ol>
+      </section>
+    </section>
+  </main>
+</body>
+
+</html>

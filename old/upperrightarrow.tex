@@ -1,0 +1,11 @@
+\documentclass{standalone}
+\usepackage{tikz}
+
+\begin{document}
+\definecolor{ye}{RGB}{249, 202, 36}
+\begin{tikzpicture}
+  % Yellow arrow with right-angle bend
+   \draw[draw=none] (-2.5,-2.5) -- (2.5,2.5);
+  \fill[ye, rotate=180] (-0.2,-0.2) -- (1.8,-0.2) -- (1.8, -0.5) -- (2.3,0) -- (1.8,0.5) -- (1.8,0.2) -- (0.2,0.2) -- (0.2,1.8) -- (0.5,1.8) -- (0,2.3) -- (-0.5,1.8) -- (-0.2,1.8) -- (-0.2,-0.2);;
+\end{tikzpicture}
+\end{document}
