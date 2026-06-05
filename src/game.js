@@ -1,10 +1,22 @@
-const ROWS = 3;
-const COLS = 4;
-const COLORS = [
+const BOARD_SIZES = [
+  { rows: 2, cols: 3 },
+  { rows: 2, cols: 4 },
+  { rows: 3, cols: 3 },
+  { rows: 3, cols: 4 }
+];
+const DEFAULT_SETTINGS = {
+  rows: 2,
+  cols: 3,
+  colorCount: 4,
+  showCompleteLines: true
+};
+const ALL_COLORS = [
   { key: "orange", label: "Orange", value: "#e69f00" },
   { key: "sky", label: "Sky blue", value: "#56b4e9" },
   { key: "green", label: "Bluish green", value: "#009e73" },
-  { key: "purple", label: "Reddish purple", value: "#cc79a7" }
+  { key: "purple", label: "Reddish purple", value: "#cc79a7" },
+  { key: "vermillion", label: "Vermillion", value: "#d55e00" },
+  { key: "blue", label: "Blue", value: "#0072b2" }
 ];
 const MINI_METRICS = {
   cell: 36,
@@ -23,6 +35,12 @@ const LAYOUT_METRICS = {
   miniMatrixGap: 6,
   cardBoardGap: 40
 };
+let ROWS = DEFAULT_SETTINGS.rows;
+let COLS = DEFAULT_SETTINGS.cols;
+let COLORS = ALL_COLORS.slice(0, DEFAULT_SETTINGS.colorCount);
+let SHOW_COMPLETE_LINES = DEFAULT_SETTINGS.showCompleteLines;
+let splashActive = false;
+let splashTimers = [];
 const state = {
   secret: [],
   guess: [],
@@ -31,6 +49,8 @@ const state = {
   solved: false
 };
 
+const SHOULD_RUN_SPLASH = window.location.search === "";
+
 const elements = {
   gameShell: document.querySelector(".game-shell"),
   board: document.querySelector("#board"),
@@ -38,25 +58,282 @@ const elements = {
   history: document.querySelector("#history"),
   status: document.querySelector("#status"),
   submitButton: document.querySelector("#submit-button"),
-  newButton: document.querySelector("#new-button")
+  newButton: document.querySelector("#new-button"),
+  instructionsButton: document.querySelector("#instructions-button"),
+  instructionsDialog: document.querySelector("#instructions-dialog"),
+  instructionsCloseButton: document.querySelector("#instructions-close-button"),
+  settingsButton: document.querySelector("#settings-button"),
+  settingsDialog: document.querySelector("#settings-dialog"),
+  settingsForm: document.querySelector("#settings-form"),
+  boardSizeSelect: document.querySelector("#board-size-select"),
+  colorCountSelect: document.querySelector("#color-count-select"),
+  completeLinesSelect: document.querySelector("#complete-lines-select")
 };
 
-elements.board.style.setProperty("--board-cols", String(COLS));
-elements.board.style.setProperty("--board-rows", String(ROWS));
-setLayoutProperties();
-elements.submitButton.addEventListener("click", submitGuess);
-elements.newButton.addEventListener("click", startGame);
+applyUrlSettings();
+syncBoardProperties();
+elements.submitButton.addEventListener("click", () => {
+  stopSplashAnimation();
+  submitGuess();
+});
+elements.newButton.addEventListener("click", () => {
+  stopSplashAnimation();
+  startGame();
+});
+elements.instructionsButton.addEventListener("click", () => {
+  stopSplashAnimation();
+  openInstructions();
+});
+elements.instructionsCloseButton.addEventListener("click", closeInstructions);
+elements.settingsButton.addEventListener("click", () => {
+  stopSplashAnimation();
+  openSettings();
+});
+elements.settingsForm.addEventListener("submit", applySettings);
+elements.settingsForm.querySelector("[value='cancel']").addEventListener("click", closeSettings);
+window.addEventListener("popstate", () => {
+  stopSplashAnimation();
+  applyUrlSettings();
+  startGame({ updateUrl: false, useUrlSolution: true });
+});
 document.addEventListener("keydown", handleKeyDown);
 
-startGame();
+startGame({
+  updateUrl: !hasUrlSolution(),
+  useUrlSolution: true,
+  splash: SHOULD_RUN_SPLASH
+});
 
-function startGame() {
-  state.secret = makeRandomGrid();
+function startGame(options = {}) {
+  const { updateUrl = true, useUrlSolution = false, splash = false } = options;
+  const urlSecret = useUrlSolution ? secretFromUrl() : null;
+
+  stopSplashAnimation();
+  state.secret = urlSecret || makeRandomGrid();
   state.guess = Array.from({ length: ROWS * COLS }, () => null);
   state.selectedCell = 0;
   state.history = [];
   state.solved = false;
+  syncBoardProperties();
+  syncSettingsControls();
+  if (updateUrl || !urlSecret) {
+    updateGameUrl();
+  }
   render();
+  if (splash) {
+    startSplashAnimation();
+  }
+}
+
+function startSplashAnimation() {
+  const splashGuess = makeRandomGrid();
+  const initialDelay = 840;
+  const stepDelay = 520;
+
+  splashActive = true;
+  splashGuess.forEach((colorIndex, index) => {
+    scheduleSplashStep(() => {
+      state.selectedCell = index;
+      state.guess[index] = colorIndex;
+      render();
+    }, initialDelay + index * stepDelay);
+  });
+  scheduleSplashStep(() => {
+    submitGuess({ keepSplashActive: true });
+    stopSplashAnimation();
+  }, initialDelay + 220 + splashGuess.length * stepDelay);
+}
+
+function scheduleSplashStep(callback, delay) {
+  const timer = window.setTimeout(() => {
+    if (!splashActive) {
+      return;
+    }
+
+    callback();
+  }, delay);
+
+  splashTimers.push(timer);
+}
+
+function stopSplashAnimation() {
+  splashTimers.forEach((timer) => window.clearTimeout(timer));
+  splashTimers = [];
+  splashActive = false;
+}
+
+function applyUrlSettings() {
+  const params = new URLSearchParams(window.location.search);
+  const size = parseBoardSize(params.get("size"));
+  const colorCount = parseColorCount(params.get("colours") || params.get("colors"));
+  const showCompleteLines = parseCompleteLines(params.get("complete"));
+
+  ROWS = size.rows;
+  COLS = size.cols;
+  COLORS = ALL_COLORS.slice(0, colorCount);
+  SHOW_COMPLETE_LINES = showCompleteLines;
+}
+
+function parseBoardSize(value) {
+  const match = /^([23])x([34])$/.exec(value || "");
+  const rows = match ? Number(match[1]) : DEFAULT_SETTINGS.rows;
+  const cols = match ? Number(match[2]) : DEFAULT_SETTINGS.cols;
+
+  if (BOARD_SIZES.some((size) => size.rows === rows && size.cols === cols)) {
+    return { rows, cols };
+  }
+
+  return {
+    rows: DEFAULT_SETTINGS.rows,
+    cols: DEFAULT_SETTINGS.cols
+  };
+}
+
+function parseColorCount(value) {
+  const colorCount = Number(value);
+
+  if (Number.isInteger(colorCount) && colorCount >= 3 && colorCount <= 6) {
+    return colorCount;
+  }
+
+  return DEFAULT_SETTINGS.colorCount;
+}
+
+function parseCompleteLines(value) {
+  if (value === "hide") {
+    return false;
+  }
+
+  if (value === "show") {
+    return true;
+  }
+
+  return DEFAULT_SETTINGS.showCompleteLines;
+}
+
+function syncBoardProperties() {
+  elements.board.style.setProperty("--board-cols", String(COLS));
+  elements.board.style.setProperty("--board-rows", String(ROWS));
+  setLayoutProperties();
+}
+
+function syncSettingsControls() {
+  elements.boardSizeSelect.value = `${ROWS}x${COLS}`;
+  elements.colorCountSelect.value = String(COLORS.length);
+  elements.completeLinesSelect.value = SHOW_COMPLETE_LINES ? "show" : "hide";
+}
+
+function openSettings() {
+  syncSettingsControls();
+  elements.settingsDialog.showModal();
+}
+
+function openInstructions() {
+  elements.instructionsDialog.showModal();
+}
+
+function closeInstructions() {
+  elements.instructionsDialog.close();
+}
+
+function closeSettings() {
+  elements.settingsDialog.close();
+}
+
+function applySettings(event) {
+  event.preventDefault();
+
+  const size = parseBoardSize(elements.boardSizeSelect.value);
+  const colorCount = parseColorCount(elements.colorCountSelect.value);
+  const showCompleteLines = parseCompleteLines(elements.completeLinesSelect.value);
+
+  ROWS = size.rows;
+  COLS = size.cols;
+  COLORS = ALL_COLORS.slice(0, colorCount);
+  SHOW_COMPLETE_LINES = showCompleteLines;
+  closeSettings();
+  startGame();
+}
+
+function updateGameUrl() {
+  const params = new URLSearchParams(window.location.search);
+
+  params.set("size", `${ROWS}x${COLS}`);
+  params.set("colours", String(COLORS.length));
+  params.set("complete", SHOW_COMPLETE_LINES ? "show" : "hide");
+  params.delete("colors");
+  params.set("s", encodeSolution(state.secret));
+  window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+}
+
+function hasUrlSolution() {
+  return new URLSearchParams(window.location.search).has("s");
+}
+
+function secretFromUrl() {
+  const encoded = new URLSearchParams(window.location.search).get("s");
+  const secret = decodeSolution(encoded);
+
+  if (secret && secret.length === ROWS * COLS && secret.every((colorIndex) => colorIndex < COLORS.length)) {
+    return secret;
+  }
+
+  return null;
+}
+
+function encodeSolution(secret) {
+  const digits = secret.join("");
+  const bytes = Array.from(digits, (digit, index) =>
+    digit.charCodeAt(0) ^ solutionMaskByte(index)
+  );
+
+  return binaryToBase64Url(String.fromCharCode(...bytes));
+}
+
+function decodeSolution(encoded) {
+  if (!encoded) {
+    return null;
+  }
+
+  try {
+    const binary = base64UrlToBinary(encoded);
+    const digits = Array.from(binary, (char, index) =>
+      String.fromCharCode(char.charCodeAt(0) ^ solutionMaskByte(index))
+    ).join("");
+
+    if (!/^\d+$/.test(digits)) {
+      return null;
+    }
+
+    return Array.from(digits, Number);
+  } catch {
+    return null;
+  }
+}
+
+function solutionMaskByte(index) {
+  let value = (ROWS * 73) ^ (COLS * 151) ^ (COLORS.length * 199) ^ (index * 37) ^ 0x5a;
+
+  value ^= value << 13;
+  value ^= value >>> 17;
+  value ^= value << 5;
+  return value & 0xff;
+}
+
+function binaryToBase64Url(binary) {
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function base64UrlToBinary(encoded) {
+  const base64 = encoded
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(Math.ceil(encoded.length / 4) * 4, "=");
+
+  return atob(base64);
 }
 
 function makeRandomGrid() {
@@ -142,6 +419,7 @@ function renderBoard() {
       ].filter(Boolean).join(" ");
       button.setAttribute("aria-label", cellLabel(index, colorIndex));
       button.addEventListener("click", () => {
+        stopSplashAnimation();
         state.selectedCell = index;
         render();
       });
@@ -247,7 +525,10 @@ function makePendingHistoryItem(placementNumber) {
   card.className = "history-card";
   item.setAttribute("aria-label", "Current unscored guess");
   positionHistoryItem(item, placementNumber);
-  card.append(makeMiniMatrix(state.guess, null, MINI_METRICS));
+  card.append(
+    makeMoveNumberSpacer(),
+    makeMiniMatrix(state.guess, null, MINI_METRICS)
+  );
   item.append(card);
   return item;
 }
@@ -284,6 +565,14 @@ function makeMoveNumber(guessNumber) {
   label.className = "move-number";
   label.textContent = guessNumber;
   return label;
+}
+
+function makeMoveNumberSpacer() {
+  const spacer = document.createElement("span");
+
+  spacer.className = "move-number move-number-spacer";
+  spacer.setAttribute("aria-hidden", "true");
+  return spacer;
 }
 
 function makeMiniMatrix(guess, score, metrics) {
@@ -406,11 +695,18 @@ function setCellColor(index, colorIndex) {
     return;
   }
 
+  stopSplashAnimation();
   state.guess[index] = colorIndex;
   render();
 }
 
-function submitGuess() {
+function submitGuess(options = {}) {
+  const { keepSplashActive = false } = options;
+
+  if (!keepSplashActive) {
+    stopSplashAnimation();
+  }
+
   if (state.solved || state.guess.some((colorIndex) => colorIndex === null)) {
     return;
   }
@@ -428,6 +724,10 @@ function submitGuess() {
 
 function makeKnownCorrectGuess() {
   const nextGuess = Array.from({ length: ROWS * COLS }, () => null);
+
+  if (!SHOW_COMPLETE_LINES) {
+    return nextGuess;
+  }
 
   state.history.forEach((entry) => {
     entry.score.rows.forEach((rowScore, row) => {
@@ -512,7 +812,9 @@ function handleKeyDown(event) {
     return;
   }
 
-  if (/^[1-4]$/.test(event.key)) {
+  stopSplashAnimation();
+
+  if (/^[1-6]$/.test(event.key) && Number(event.key) <= COLORS.length) {
     event.preventDefault();
     setCellColor(state.selectedCell, Number(event.key) - 1);
     return;
