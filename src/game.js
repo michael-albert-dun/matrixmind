@@ -8,7 +8,8 @@ const DEFAULT_SETTINGS = {
   rows: 2,
   cols: 3,
   colorCount: 4,
-  showCompleteLines: true
+  showCompleteLines: true,
+  showColorNumbers: false
 };
 const ALL_COLORS = [
   { key: "orange", label: "Orange", value: "#e69f00" },
@@ -39,6 +40,7 @@ let ROWS = DEFAULT_SETTINGS.rows;
 let COLS = DEFAULT_SETTINGS.cols;
 let COLORS = ALL_COLORS.slice(0, DEFAULT_SETTINGS.colorCount);
 let SHOW_COMPLETE_LINES = DEFAULT_SETTINGS.showCompleteLines;
+let SHOW_COLOR_NUMBERS = DEFAULT_SETTINGS.showColorNumbers;
 let splashActive = false;
 let splashTimers = [];
 const state = {
@@ -67,7 +69,8 @@ const elements = {
   settingsForm: document.querySelector("#settings-form"),
   boardSizeSelect: document.querySelector("#board-size-select"),
   colorCountSelect: document.querySelector("#color-count-select"),
-  completeLinesSelect: document.querySelector("#complete-lines-select")
+  completeLinesSelect: document.querySelector("#complete-lines-select"),
+  numberedColorsSelect: document.querySelector("#numbered-colors-select")
 };
 
 applyUrlSettings();
@@ -167,11 +170,13 @@ function applyUrlSettings() {
   const size = parseBoardSize(params.get("size"));
   const colorCount = parseColorCount(params.get("colours") || params.get("colors"));
   const showCompleteLines = parseCompleteLines(params.get("complete"));
+  const showColorNumbers = parseColorNumbers(params.get("numbers"));
 
   ROWS = size.rows;
   COLS = size.cols;
   COLORS = ALL_COLORS.slice(0, colorCount);
   SHOW_COMPLETE_LINES = showCompleteLines;
+  SHOW_COLOR_NUMBERS = showColorNumbers;
 }
 
 function parseBoardSize(value) {
@@ -211,9 +216,22 @@ function parseCompleteLines(value) {
   return DEFAULT_SETTINGS.showCompleteLines;
 }
 
+function parseColorNumbers(value) {
+  if (value === "show") {
+    return true;
+  }
+
+  if (value === "hide") {
+    return false;
+  }
+
+  return DEFAULT_SETTINGS.showColorNumbers;
+}
+
 function syncBoardProperties() {
   elements.board.style.setProperty("--board-cols", String(COLS));
   elements.board.style.setProperty("--board-rows", String(ROWS));
+  elements.gameShell.classList.toggle("show-color-numbers", SHOW_COLOR_NUMBERS);
   setLayoutProperties();
 }
 
@@ -221,6 +239,7 @@ function syncSettingsControls() {
   elements.boardSizeSelect.value = `${ROWS}x${COLS}`;
   elements.colorCountSelect.value = String(COLORS.length);
   elements.completeLinesSelect.value = SHOW_COMPLETE_LINES ? "show" : "hide";
+  elements.numberedColorsSelect.value = SHOW_COLOR_NUMBERS ? "show" : "hide";
 }
 
 function openSettings() {
@@ -246,11 +265,13 @@ function applySettings(event) {
   const size = parseBoardSize(elements.boardSizeSelect.value);
   const colorCount = parseColorCount(elements.colorCountSelect.value);
   const showCompleteLines = parseCompleteLines(elements.completeLinesSelect.value);
+  const showColorNumbers = parseColorNumbers(elements.numberedColorsSelect.value);
 
   ROWS = size.rows;
   COLS = size.cols;
   COLORS = ALL_COLORS.slice(0, colorCount);
   SHOW_COMPLETE_LINES = showCompleteLines;
+  SHOW_COLOR_NUMBERS = showColorNumbers;
   closeSettings();
   startGame();
 }
@@ -261,6 +282,7 @@ function updateGameUrl() {
   params.set("size", `${ROWS}x${COLS}`);
   params.set("colours", String(COLORS.length));
   params.set("complete", SHOW_COMPLETE_LINES ? "show" : "hide");
+  params.set("numbers", SHOW_COLOR_NUMBERS ? "show" : "hide");
   params.delete("colors");
   params.set("s", encodeSolution(state.secret));
   window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
@@ -430,6 +452,7 @@ function renderBoard() {
       peg.setAttribute("aria-hidden", "true");
       if (colorIndex !== null) {
         peg.style.setProperty("--peg-color", COLORS[colorIndex].value);
+        peg.dataset.colorNumber = String(colorIndex + 1);
       }
       button.append(peg);
       elements.board.append(button);
@@ -480,6 +503,7 @@ function renderPalette() {
 
     peg.className = "peg";
     peg.style.setProperty("--peg-color", color.value);
+    peg.dataset.colorNumber = String(index + 1);
     peg.setAttribute("aria-hidden", "true");
     button.append(peg);
     elements.palette.append(button);
@@ -629,6 +653,7 @@ function makeMiniPeg(colorIndex) {
 
   peg.className = "mini-peg";
   peg.style.setProperty("--peg-color", COLORS[colorIndex].value);
+  peg.dataset.colorNumber = String(colorIndex + 1);
   peg.setAttribute("aria-hidden", "true");
   cell.append(peg);
   return cell;

@@ -770,6 +770,27 @@ h1 {
     0 3px 5px rgba(36, 24, 16, 0.26);
 }
 
+.show-color-numbers .peg::after,
+.show-color-numbers .mini-peg::after {
+  content: attr(data-color-number);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(12, 11, 14, 0.82);
+  font-weight: 850;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.28);
+}
+
+.show-color-numbers .peg::after {
+  font-size: 0.78rem;
+}
+
+.show-color-numbers .mini-peg::after {
+  font-size: 0.56rem;
+}
+
 .palette {
   display: flex;
   justify-content: center;
@@ -940,6 +961,7 @@ h1 {
 }
 
 .mini-peg {
+  position: relative;
   width: var(--mini-peg);
   height: var(--mini-peg);
   border-radius: 999px;
