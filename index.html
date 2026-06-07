@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Matrixmind</title>
-  <link rel="stylesheet" href="styles.css?v=20260605q">
-  <script src="src/game.js?v=20260605q" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260607b">
+  <script src="src/game.js?v=20260607b" defer></script>
 </head>
 
 <body>
@@ -27,16 +27,18 @@
         </h1>
         <div class="top-actions" aria-label="Game controls">
           <button id="new-button" class="control-icon-button new-game-control" type="button" aria-label="New game" title="New game">
-            <svg class="new-game-icon" viewBox="0 0 64 64" aria-hidden="true">
-              <rect class="new-game-board" x="8" y="17" width="45" height="31" rx="5"></rect>
-              <circle class="new-game-hole" cx="20" cy="28" r="3"></circle>
-              <circle class="new-game-hole" cx="31" cy="28" r="3"></circle>
-              <circle class="new-game-hole" cx="42" cy="28" r="3"></circle>
-              <circle class="new-game-hole" cx="20" cy="38" r="3"></circle>
-              <circle class="new-game-hole" cx="31" cy="38" r="3"></circle>
-              <circle class="new-game-hole" cx="42" cy="38" r="3"></circle>
-              <circle class="new-game-plus-disc" cx="50" cy="45" r="10"></circle>
-              <path class="new-game-plus" d="M50 39v12M44 45h12"></path>
+            <svg class="new-game-icon" viewBox="0 0 96 78" aria-hidden="true">
+              <rect class="new-game-tray" x="3" y="19" width="90" height="38" rx="5"></rect>
+              <path class="new-game-tray-lip" d="M10 27h76"></path>
+              <circle class="new-game-well" cx="24.6" cy="38" r="6"></circle>
+              <circle class="new-game-well" cx="40.2" cy="38" r="6"></circle>
+              <circle class="new-game-well" cx="55.8" cy="38" r="6"></circle>
+              <circle class="new-game-well" cx="71.4" cy="38" r="6"></circle>
+              <circle class="new-game-peg stone-orange" cx="24.6" cy="38" r="4.3"></circle>
+              <circle class="new-game-peg stone-sky" cx="40.2" cy="38" r="4.3"></circle>
+              <circle class="new-game-peg stone-green" cx="55.8" cy="38" r="4.3"></circle>
+              <circle class="new-game-peg stone-purple" cx="71.4" cy="38" r="4.3"></circle>
+              <path class="new-game-plus" d="M84 44v11M79 49.5h10"></path>
             </svg>
           </button>
           <button id="instructions-button" class="control-icon-button instructions-control" type="button" aria-label="Instructions" title="Instructions">
@@ -61,9 +63,7 @@
         <div class="palette-row">
           <div id="palette" class="palette" aria-label="Colour palette"></div>
           <button id="submit-button" class="enter-button" type="button" aria-label="Submit guess">
-            <svg class="enter-icon" viewBox="0 0 48 48" aria-hidden="true">
-              <path d="M6 36c4.5-15.5 17-24 32-24V5l8 10-8 10v-7C24 18 13.5 24.4 6 36Z" />
-            </svg>
+            ENTER
           </button>
         </div>
         <div class="action-row">
@@ -164,7 +164,7 @@
           <div class="rules-example" aria-label="Example secret and guess">
             <div class="example-panel">
               <h4>Secret</h4>
-              <div class="example-grid" aria-label="Secret: Orange, Sky, Green; Purple, Orange, Sky">
+              <div class="example-grid" aria-label="Secret: Red, Blue, Green; Yellow, Red, Blue">
                 <span class="example-stone stone-orange"></span>
                 <span class="example-stone stone-sky"></span>
                 <span class="example-stone stone-green"></span>
@@ -175,7 +175,7 @@
             </div>
             <div class="example-panel">
               <h4>Guess</h4>
-              <div class="example-grid" aria-label="Guess: Orange, Green, Sky; Purple, Orange, Green">
+              <div class="example-grid" aria-label="Guess: Red, Green, Blue; Yellow, Red, Green">
                 <span class="example-stone stone-orange"></span>
                 <span class="example-stone stone-green"></span>
                 <span class="example-stone stone-sky"></span>
@@ -186,12 +186,12 @@
             </div>
           </div>
           <p>
-            Row 1 scores one dark pip for Orange, plus two pale pips because Sky and Green are both present but swapped.
-            Row 2 scores two dark pips for Purple and Orange, and no pale pips.
+            Row 1 scores one dark pip for Red, plus two pale pips because Blue and Green are both present but swapped.
+            Row 2 scores two dark pips for Yellow and Red, and no pale pips.
           </p>
           <p>
-            Column 1 has two dark pips. Column 2 has one dark pip for Orange and no pale pips.
-            Column 3 has two pale pips because Sky and Green are both in the
+            Column 1 has two dark pips. Column 2 has one dark pip for Red and no pale pips.
+            Column 3 has two pale pips because Blue and Green are both in the
             column, but both are in the wrong positions.
           </p>
           <div class="rules-scored-card" aria-label="Scored example result">

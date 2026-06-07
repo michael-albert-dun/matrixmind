@@ -12,12 +12,12 @@ const DEFAULT_SETTINGS = {
   showColorNumbers: false
 };
 const ALL_COLORS = [
-  { key: "orange", label: "Orange", value: "#e69f00" },
-  { key: "sky", label: "Sky blue", value: "#56b4e9" },
-  { key: "green", label: "Bluish green", value: "#009e73" },
-  { key: "purple", label: "Reddish purple", value: "#cc79a7" },
-  { key: "vermillion", label: "Vermillion", value: "#d55e00" },
-  { key: "blue", label: "Blue", value: "#0072b2" }
+  { key: "red", label: "Red", value: "#d84b2a" },
+  { key: "blue", label: "Blue", value: "#0072b2" },
+  { key: "green", label: "Green", value: "#009e73" },
+  { key: "yellow", label: "Yellow", value: "#f0d84a" },
+  { key: "white", label: "White", value: "#f7f2df" },
+  { key: "black", label: "Black", value: "#242129" }
 ];
 const MINI_METRICS = {
   cell: 36,
@@ -453,6 +453,7 @@ function renderBoard() {
       if (colorIndex !== null) {
         peg.style.setProperty("--peg-color", COLORS[colorIndex].value);
         peg.dataset.colorNumber = String(colorIndex + 1);
+        peg.dataset.colorKey = COLORS[colorIndex].key;
       }
       button.append(peg);
       elements.board.append(button);
@@ -504,6 +505,7 @@ function renderPalette() {
     peg.className = "peg";
     peg.style.setProperty("--peg-color", color.value);
     peg.dataset.colorNumber = String(index + 1);
+    peg.dataset.colorKey = color.key;
     peg.setAttribute("aria-hidden", "true");
     button.append(peg);
     elements.palette.append(button);
@@ -654,6 +656,7 @@ function makeMiniPeg(colorIndex) {
   peg.className = "mini-peg";
   peg.style.setProperty("--peg-color", COLORS[colorIndex].value);
   peg.dataset.colorNumber = String(colorIndex + 1);
+  peg.dataset.colorKey = COLORS[colorIndex].key;
   peg.setAttribute("aria-hidden", "true");
   cell.append(peg);
   return cell;
@@ -715,13 +718,20 @@ function makeCornerCell(label = "") {
   return cell;
 }
 
-function setCellColor(index, colorIndex) {
+function setCellColor(index, colorIndex, options = {}) {
+  const { advanceSelection = false } = options;
+
   if (state.solved) {
     return;
   }
 
   stopSplashAnimation();
   state.guess[index] = colorIndex;
+
+  if (advanceSelection) {
+    state.selectedCell = nextOpenCellIndexAfter(index, state.guess);
+  }
+
   render();
 }
 
@@ -785,6 +795,20 @@ function firstOpenCellIndex(guess) {
   return emptyIndex === -1 ? 0 : emptyIndex;
 }
 
+function nextOpenCellIndexAfter(index, guess) {
+  const count = guess.length;
+
+  for (let offset = 1; offset < count; offset += 1) {
+    const nextIndex = wrapCellIndex(index + offset);
+
+    if (guess[nextIndex] === null) {
+      return nextIndex;
+    }
+  }
+
+  return index;
+}
+
 function scoreGuess(guess) {
   return {
     rows: Array.from({ length: ROWS }, (_, row) =>
@@ -841,7 +865,7 @@ function handleKeyDown(event) {
 
   if (/^[1-6]$/.test(event.key) && Number(event.key) <= COLORS.length) {
     event.preventDefault();
-    setCellColor(state.selectedCell, Number(event.key) - 1);
+    setCellColor(state.selectedCell, Number(event.key) - 1, { advanceSelection: true });
     return;
   }
 
